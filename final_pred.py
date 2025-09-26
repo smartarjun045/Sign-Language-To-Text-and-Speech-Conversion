@@ -78,11 +78,11 @@ class Application:
         self.panel5.place(x=260, y=632)
 
         self.T3 = tk.Label(self.root)
-        self.T3.place(x=10, y=632)
+        self.T3.place(x=80, y=700)
         self.T3.config(text="Sentence :", font=("Courier", 30, "bold"))
 
         self.T4 = tk.Label(self.root)
-        self.T4.place(x=10, y=700)
+        self.T4.place(x=90, y=700)
         self.T4.config(text="Suggestions :", fg="red", font=("Courier", 30, "bold"))
 
 
@@ -223,7 +223,7 @@ class Application:
                 x, y, w, h = hand['bbox']
                 image = cv2image_copy[y - offset:y + h + offset, x - offset:x + w + offset]
 
-                white = cv2.imread("C:\\Users\\devansh raval\\PycharmProjects\\pythonProject\\white.jpg")
+                white = cv2.imread("white.jpg")
                 # img_final=img_final1=img_final2=0
 
                 handz = hd2.findHands(image, draw=False, flipType=True)
