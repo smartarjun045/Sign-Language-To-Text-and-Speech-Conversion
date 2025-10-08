@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error {{ error_code }} - Sign Language Recognition</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="error-page">
+    <div class="error-container">
+        <div class="error-card">
+            <div class="error-icon">
+                {% if error_code == 404 %}
+                    <i class="fas fa-search"></i>
+                {% elif error_code == 500 %}
+                    <i class="fas fa-server"></i>
+                {% else %}
+                    <i class="fas fa-exclamation-triangle"></i>
+                {% endif %}
+            </div>
+            
+            <div class="error-content">
+                <h1>Error {{ error_code }}</h1>
+                <h2>
+                    {% if error_code == 404 %}
+                        Page Not Found
+                    {% elif error_code == 500 %}
+                        Internal Server Error
+                    {% else %}
+                        Something Went Wrong
+                    {% endif %}
+                </h2>
+                
+                <p class="error-message">{{ error_message }}</p>
+                
+                <div class="error-description">
+                    {% if error_code == 404 %}
+                        <p>The page you're looking for doesn't exist. It might have been moved, deleted, or you entered the wrong URL.</p>
+                    {% elif error_code == 500 %}
+                        <p>We're experiencing some technical difficulties. Our team has been notified and is working to fix the issue.</p>
+                    {% else %}
+                        <p>An unexpected error occurred. Please try again or contact support if the problem persists.</p>
+                    {% endif %}
+                </div>
+                
+                <div class="error-actions">
+                    <a href="{{ url_for('index') }}" class="error-btn primary">
+                        <i class="fas fa-home"></i>
+                        Go Home
+                    </a>
+                    <button onclick="history.back()" class="error-btn secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Go Back
+                    </button>
+                    <button onclick="location.reload()" class="error-btn accent">
+                        <i class="fas fa-redo"></i>
+                        Retry
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="error-footer">
+            <p>Need help? Contact our support team:</p>
+            <div class="contact-info">
+                <a href="mailto:support@gesturevoice.app" class="contact-link">
+                    <i class="fas fa-envelope"></i>
+                    support@gesturevoice.app
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

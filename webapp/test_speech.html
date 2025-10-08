@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Synthesis Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #b6d4db; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔊 Speech Synthesis Test</h1>
+        
+        <div class="test-section">
+            <h3>Browser Support Check</h3>
+            <div id="supportStatus" class="status info">Checking browser support...</div>
+            <div id="voicesList"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Quick Test</h3>
+            <button onclick="testQuickSpeech()">Test: "Hello World"</button>
+            <button onclick="testASLSpeech()">Test: "Welcome to ASL Recognition"</button>
+            <button onclick="stopSpeech()">Stop Speech</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Custom Text Test</h3>
+            <textarea id="customText" placeholder="Enter text to speak...">The quick brown fox jumps over the lazy dog. This is a test of the speech synthesis system.</textarea>
+            <br>
+            <button onclick="speakCustomText()">Speak Custom Text</button>
+            <button onclick="clearText()">Clear Text</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Voice Settings</h3>
+            <label>Voice: <select id="voiceSelect"></select></label><br><br>
+            <label>Rate: <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="0.8"> <span id="rateValue">0.8</span></label><br><br>
+            <label>Pitch: <input type="range" id="pitchSlider" min="0" max="2" step="0.1" value="1"> <span id="pitchValue">1.0</span></label><br><br>
+            <label>Volume: <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1"> <span id="volumeValue">1.0</span></label>
+        </div>
+        
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        let voices = [];
+        
+        function checkBrowserSupport() {
+            const statusEl = document.getElementById('supportStatus');
+            
+            if ('speechSynthesis' in window) {
+                statusEl.className = 'status success';
+                statusEl.textContent = '✅ Speech Synthesis is supported in your browser!';
+                loadVoices();
+            } else {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Speech Synthesis is NOT supported in your browser.';
+            }
+        }
+        
+        function loadVoices() {
+            voices = window.speechSynthesis.getVoices();
+            
+            if (voices.length === 0) {
+                // Voices might not be loaded yet
+                window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+                return;
+            }
+            
+            displayVoices();
+            populateVoiceSelect();
+        }
+        
+        function displayVoices() {
+            const voicesListEl = document.getElementById('voicesList');
+            const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
+            
+            if (englishVoices.length > 0) {
+                voicesListEl.innerHTML = `
+                    <h4>Available English Voices (${englishVoices.length}):</h4>
+                    <ul>${englishVoices.map(voice => `<li>${voice.name} (${voice.lang})</li>`).join('')}</ul>
+                `;
+            } else {
+                voicesListEl.innerHTML = `
+                    <h4>Available Voices (${voices.length}):</h4>
+                    <ul>${voices.slice(0, 5).map(voice => `<li>${voice.name} (${voice.lang})</li>`).join('')}</ul>
+                    ${voices.length > 5 ? '<li>... and more</li>' : ''}
+                `;
+            }
+        }
+        
+        function populateVoiceSelect() {
+            const select = document.getElementById('voiceSelect');
+            select.innerHTML = '<option value="">Default Voice</option>';
+            
+            voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.lang.startsWith('en')) {
+                    option.textContent += ' ⭐';
+                }
+                select.appendChild(option);
+            });
+        }
+        
+        function speak(text) {
+            if (!('speechSynthesis' in window)) {
+                showMessage('Speech synthesis not supported', 'error');
+                return;
+            }
+            
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            // Create utterance
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Apply settings
+            const voiceSelect = document.getElementById('voiceSelect');
+            const selectedVoiceIndex = voiceSelect.value;
+            if (selectedVoiceIndex !== '' && voices[selectedVoiceIndex]) {
+                utterance.voice = voices[selectedVoiceIndex];
+            }
+            
+            utterance.rate = parseFloat(document.getElementById('rateSlider').value);
+            utterance.pitch = parseFloat(document.getElementById('pitchSlider').value);
+            utterance.volume = parseFloat(document.getElementById('volumeSlider').value);
+            
+            // Event listeners
+            utterance.onstart = () => {
+                showMessage('🔊 Speech started', 'info');
+                console.log('Speech started');
+            };
+            
+            utterance.onend = () => {
+                showMessage('✅ Speech completed', 'success');
+                console.log('Speech completed');
+            };
+            
+            utterance.onerror = (event) => {
+                showMessage(`❌ Speech error: ${event.error}`, 'error');
+                console.error('Speech error:', event.error);
+            };
+            
+            // Speak
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        function testQuickSpeech() {
+            speak('Hello World! This is a test of speech synthesis.');
+        }
+        
+        function testASLSpeech() {
+            speak('Welcome to the American Sign Language Recognition System. The speech synthesis is working correctly.');
+        }
+        
+        function speakCustomText() {
+            const text = document.getElementById('customText').value.trim();
+            if (text) {
+                speak(text);
+            } else {
+                showMessage('Please enter some text to speak', 'error');
+            }
+        }
+        
+        function stopSpeech() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                showMessage('🛑 Speech stopped', 'info');
+            }
+        }
+        
+        function clearText() {
+            document.getElementById('customText').value = '';
+        }
+        
+        function showMessage(message, type) {
+            const messagesEl = document.getElementById('messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = `status ${type}`;
+            messageEl.textContent = message;
+            
+            messagesEl.appendChild(messageEl);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                messageEl.remove();
+            }, 3000);
+        }
+        
+        // Update slider values
+        document.getElementById('rateSlider').addEventListener('input', (e) => {
+            document.getElementById('rateValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('pitchSlider').addEventListener('input', (e) => {
+            document.getElementById('pitchValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            document.getElementById('volumeValue').textContent = e.target.value;
+        });
+        
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            checkBrowserSupport();
+        });
+    </script>
+</body>
+</html>
