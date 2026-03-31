@@ -30,7 +30,10 @@ if (-not (Test-Path "app.py")) {
 }
 
 # Check if virtual environment exists
-if (-not (Test-Path ".venv")) {
+$venvDir = "..\.venv_mp"
+if (-not (Test-Path $venvDir)) { $venvDir = "..\.venv_web" }
+if (-not (Test-Path $venvDir)) { $venvDir = ".venv" }
+if (-not (Test-Path $venvDir)) {
     Write-Host "Creating virtual environment..." -ForegroundColor Yellow
     python -m venv .venv
     if ($LASTEXITCODE -ne 0) {
@@ -38,11 +41,12 @@ if (-not (Test-Path ".venv")) {
         Read-Host "Press Enter to exit"
         exit 1
     }
+    $venvDir = ".venv"
 }
 
 # Activate virtual environment
 Write-Host "Activating virtual environment..." -ForegroundColor Yellow
-& ".\.venv\Scripts\Activate.ps1"
+& "$venvDir\Scripts\Activate.ps1"
 
 # Check if requirements are installed
 try {
@@ -116,7 +120,7 @@ Write-Host ""
 
 # Start the Flask application
 try {
-    .venv\Scripts\python.exe app.py
+    & "$venvDir\Scripts\python.exe" app.py
 } catch {
     Write-Host ""
     Write-Host "Application stopped with error: $($_.Exception.Message)" -ForegroundColor Red

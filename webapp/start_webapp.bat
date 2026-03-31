@@ -25,7 +25,10 @@ if not exist "app.py" (
 )
 
 REM Check if virtual environment exists
-if not exist ".venv" (
+set "VENV_DIR=..\.venv_mp"
+if not exist "%VENV_DIR%" set "VENV_DIR=..\.venv_web"
+if not exist "%VENV_DIR%" set "VENV_DIR=.venv"
+if not exist "%VENV_DIR%" (
     echo Creating virtual environment...
     python -m venv .venv
     if errorlevel 1 (
@@ -33,11 +36,12 @@ if not exist ".venv" (
         pause
         exit /b 1
     )
+    set "VENV_DIR=.venv"
 )
 
 REM Activate virtual environment
 echo Activating virtual environment...
-call .venv\Scripts\activate.bat
+call "%VENV_DIR%\Scripts\activate.bat"
 
 REM Check if requirements are installed
 pip show flask >nul 2>&1
@@ -106,10 +110,10 @@ echo Press Ctrl+C to stop the server
 echo.
 
 REM Start the Flask application
-.venv\Scripts\python.exe app.py
+"%VENV_DIR%\Scripts\python.exe" app.py
 
 REM Deactivate virtual environment when done
-call .venv\Scripts\deactivate.bat
+call "%VENV_DIR%\Scripts\deactivate.bat"
 
 echo.
 echo Application stopped.

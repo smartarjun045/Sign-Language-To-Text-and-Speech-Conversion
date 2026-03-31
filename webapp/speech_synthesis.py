@@ -146,6 +146,29 @@ class SpeechSynthesis:
         except Exception as e:
             logger.error(f"Error queuing text for speech: {e}")
             return False
+
+    def speak_latest(self, text):
+        try:
+            if not text or not text.strip():
+                logger.warning("Empty text provided for speech synthesis")
+                return False
+
+            if self.speech_thread is None or not self.speech_thread.is_alive():
+                self.start_speech_worker()
+
+            clean_text = self.clean_text(text)
+            if not clean_text:
+                logger.warning("No speakable text after cleaning")
+                return False
+
+            self.clear_speech_queue()
+
+            self.speech_queue.put(clean_text)
+            logger.info(f"Text queued for speech: {clean_text[:30]}{'...' if len(clean_text) > 30 else ''}")
+            return True
+        except Exception as e:
+            logger.error(f"Error queuing text for speech: {e}")
+            return False
     
     def speak_immediately(self, text):
         """

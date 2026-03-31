@@ -16,14 +16,42 @@ Key Features:
 import cv2
 import numpy as np
 import math
+from collections import deque, Counter
 from keras.models import load_model
 from cvzone.HandTrackingModule import HandDetector
 from string import ascii_uppercase
-import enchant
 import os
 import logging
 
 logger = logging.getLogger(__name__)
+
+COMMON_WORDS = (
+    "a", "about", "after", "again", "all", "also", "am", "an", "and", "any", "are", "as", "at",
+    "back", "be", "because", "been", "before", "best", "better", "but", "by",
+    "can", "come", "could",
+    "day", "do", "does", "done", "down",
+    "easy", "end", "enough", "even", "every",
+    "feel", "find", "for", "from",
+    "get", "give", "go", "good", "great",
+    "had", "have", "hello", "help", "her", "here", "hi", "him", "his", "home", "how",
+    "i", "if", "in", "into", "is", "it", "its",
+    "just",
+    "know",
+    "last", "later", "like", "little", "look", "love",
+    "make", "many", "me", "more", "most", "my",
+    "need", "new", "next", "nice", "no", "not", "now",
+    "of", "off", "ok", "on", "one", "only", "or", "our", "out", "over",
+    "people", "please",
+    "right",
+    "say", "see", "she", "so", "some", "sorry", "start", "stop",
+    "take", "tell", "thank", "thanks", "that", "the", "their", "them", "then", "there",
+    "these", "they", "this", "time", "to", "today", "tomorrow", "too", "try",
+    "up", "us",
+    "very",
+    "want", "was", "we", "well", "were", "what", "when", "where", "which", "who", "why",
+    "will", "with", "work", "would",
+    "yes", "you", "your",
+)
 
 class SignLanguageRecognizer:
     def __init__(self, model_path='cnn8grps_rad1_model.h5', white_bg_path='white.jpg'):
@@ -37,6 +65,11 @@ class SignLanguageRecognizer:
         self.model_path = model_path
         self.white_bg_path = white_bg_path
         
+        import mediapipe as mp
+        if not hasattr(mp, "solutions"):
+            import mediapipe.python.solutions as mp_solutions
+            mp.solutions = mp_solutions
+
         # Initialize hand detectors
         self.hd = HandDetector(maxHands=1)
         self.hd2 = HandDetector(maxHands=1)
@@ -45,18 +78,33 @@ class SignLanguageRecognizer:
         self.model = None
         self.load_model()
         
-        # Initialize dictionary for word suggestions
-        try:
-            self.dictionary = enchant.Dict("en-US")
-        except Exception as e:
-            logger.warning(f"Could not load dictionary: {e}")
-            self.dictionary = None
+        self.dictionary = None
         
         # Recognition state variables
         self.reset_recognition_state()
         
         # Constants
         self.offset = 29
+
+    def _normalize_hands_result(self, result):
+        if result is None:
+            return []
+        if isinstance(result, list):
+            if len(result) == 0:
+                return []
+            if isinstance(result[0], dict):
+                return result
+            if len(result) == 2 and isinstance(result[0], np.ndarray) and isinstance(result[1], list):
+                return result[1]
+            if len(result) == 2 and isinstance(result[1], np.ndarray) and isinstance(result[0], list):
+                return result[0]
+            return []
+        if isinstance(result, tuple):
+            if len(result) == 2 and isinstance(result[0], np.ndarray) and isinstance(result[1], list):
+                return result[1]
+            if len(result) == 2 and isinstance(result[1], np.ndarray) and isinstance(result[0], list):
+                return result[0]
+        return []
         
     def load_model(self):
         """Load the pre-trained CNN model"""
@@ -71,10 +119,11 @@ class SignLanguageRecognizer:
                     self.model = load_model(parent_model_path)
                     logger.info(f"Model loaded from parent directory: {parent_model_path}")
                 else:
-                    raise FileNotFoundError(f"Model file not found: {self.model_path}")
+                    self.model = None
+                    logger.error(f"Model file not found: {self.model_path}")
         except Exception as e:
+            self.model = None
             logger.error(f"Error loading model: {e}")
-            raise
     
     def reset_recognition_state(self):
         """Reset all recognition state variables"""
@@ -98,6 +147,9 @@ class SignLanguageRecognizer:
         
         # Word suggestions
         self.word_suggestions = [" ", " ", " ", " "]
+
+        self.prediction_history = deque(maxlen=7)
+        self.last_confidence = 0.0
         
         logger.info("Recognition state reset")
     
@@ -158,12 +210,15 @@ class SignLanguageRecognizer:
             input_image = hand_image.reshape(1, 400, 400, 3)
             
             # Get model predictions
-            prob = np.array(self.model.predict(input_image)[0], dtype='float32')
-            ch1 = np.argmax(prob, axis=0)
+            raw_prob = np.array(self.model.predict(input_image)[0], dtype='float32')
+            ch1 = int(np.argmax(raw_prob, axis=0))
+            self.last_confidence = float(raw_prob[ch1]) if raw_prob.size > 0 else 0.0
+
+            prob = raw_prob.copy()
             prob[ch1] = 0
-            ch2 = np.argmax(prob, axis=0)
+            ch2 = int(np.argmax(prob, axis=0))
             prob[ch2] = 0
-            ch3 = np.argmax(prob, axis=0)
+            ch3 = int(np.argmax(prob, axis=0))
             prob[ch3] = 0
             
             pl = [ch1, ch2]
@@ -253,12 +308,26 @@ class SignLanguageRecognizer:
             elif finger_up[0] and finger_up[1] and finger_up[2] and not finger_up[3]:
                 predicted_char = 'W'
             elif finger_up[0] and finger_up[1] and not finger_up[2] and not finger_up[3]:
-                if (self.distance(pts[8], pts[12]) - self.distance(pts[6], pts[10])) < 8:
+                tip_dist = self.distance(pts[8], pts[12])
+                mcp_dist = self.distance(pts[5], pts[9]) + 1e-6
+                ratio = tip_dist / mcp_dist
+
+                crossed = (pts[8][0] - pts[12][0]) * (pts[5][0] - pts[9][0]) < 0
+
+                x_min = min(pts[5][0], pts[9][0])
+                x_max = max(pts[5][0], pts[9][0])
+                thumb_between = x_min < pts[4][0] < x_max
+                palm_scale = self.distance(pts[5], pts[17]) + 1e-6
+                thumb_extended = (self.distance(pts[4], pts[0]) / palm_scale) > 0.75 and pts[4][1] < pts[0][1]
+
+                if crossed and ratio < 1.1:
+                    predicted_char = 'R'
+                elif thumb_between and thumb_extended:
+                    predicted_char = 'K'
+                elif ratio < 0.75:
                     predicted_char = 'U'
                 else:
                     predicted_char = 'V'
-            elif finger_up[0] and finger_up[1] and not finger_up[2] and not finger_up[3] and pts[8][0] > pts[12][0]:
-                predicted_char = 'R'
             else:
                 predicted_char = 'K'
         else:
@@ -289,16 +358,20 @@ class SignLanguageRecognizer:
         """
         # Handle "next" gesture for character confirmation
         if character == "next" and self.prev_char != "next":
-            if self.ten_prev_char[(self.count-2) % 10] != "next":
-                if self.ten_prev_char[(self.count-2) % 10] == "Backspace":
-                    if len(self.recognized_text) > 0:
-                        self.recognized_text = self.recognized_text[:-1]
-                else:
-                    if self.ten_prev_char[(self.count-2) % 10] not in ["Backspace", " ", "next"]:
-                        self.recognized_text += self.ten_prev_char[(self.count-2) % 10]
+            stable = self._get_stable_candidate()
+            if stable and stable not in ["Backspace", " ", "next"]:
+                self.recognized_text += stable
             else:
-                if self.ten_prev_char[self.count % 10] not in ["Backspace", " ", "next"]:
-                    self.recognized_text += self.ten_prev_char[self.count % 10]
+                if self.ten_prev_char[(self.count-2) % 10] != "next":
+                    if self.ten_prev_char[(self.count-2) % 10] == "Backspace":
+                        if len(self.recognized_text) > 0:
+                            self.recognized_text = self.recognized_text[:-1]
+                    else:
+                        if self.ten_prev_char[(self.count-2) % 10] not in ["Backspace", " ", "next"]:
+                            self.recognized_text += self.ten_prev_char[(self.count-2) % 10]
+                else:
+                    if self.ten_prev_char[self.count % 10] not in ["Backspace", " ", "next"]:
+                        self.recognized_text += self.ten_prev_char[self.count % 10]
         
         # Handle space
         elif character == " " and self.prev_char != " ":
@@ -311,40 +384,77 @@ class SignLanguageRecognizer:
         
         # Update tracking variables
         self.prev_char = character
-        self.current_symbol = character
+        self._record_prediction(character, self.last_confidence)
+        display = self._get_stable_candidate() if character not in ["next", " ", "Backspace"] else character
+        self.current_symbol = display if display else character
         self.count += 1
-        self.ten_prev_char[self.count % 10] = character
+        self.ten_prev_char[self.count % 10] = self.current_symbol
         
         # Update word suggestions
         self.update_word_suggestions()
+
+    def _record_prediction(self, character, confidence):
+        if character in ascii_uppercase:
+            self.prediction_history.append((character, float(confidence) if confidence is not None else 0.0))
+
+    def _get_stable_candidate(self):
+        if not self.prediction_history:
+            return ""
+
+        letters = [c for c, _ in self.prediction_history if c in ascii_uppercase]
+        if not letters:
+            return ""
+
+        counts = Counter(letters)
+        best, best_count = counts.most_common(1)[0]
+        if best_count >= max(2, (len(letters) + 1) // 2):
+            return best
+        return letters[-1]
+
+    def _current_word(self):
+        last_space = self.recognized_text.rfind(" ")
+        return self.recognized_text[last_space + 1:] if last_space >= 0 else self.recognized_text
+
+    def _fallback_suggestions(self, prefix, limit=4):
+        prefix = prefix.strip().lower()
+        if not prefix:
+            return [" "] * limit
+
+        suggestions = []
+        for word in COMMON_WORDS:
+            if word.startswith(prefix) and word != prefix:
+                suggestions.append(word.upper())
+                if len(suggestions) >= limit:
+                    break
+
+        while len(suggestions) < limit:
+            suggestions.append(" ")
+
+        return suggestions
     
     def update_word_suggestions(self):
         """Update word suggestions based on current text"""
-        if not self.dictionary:
-            self.word_suggestions = [" ", " ", " ", " "]
-            return
-            
         try:
-            if len(self.recognized_text.strip()) != 0:
-                # Get current word
-                last_space = self.recognized_text.rfind(" ")
-                current_word = self.recognized_text[last_space + 1:]
-                self.current_word = current_word
-                
-                if len(current_word.strip()) != 0:
-                    # Get dictionary suggestions
-                    suggestions = self.dictionary.suggest(current_word)
-                    
-                    # Fill suggestion array
-                    for i in range(4):
-                        if i < len(suggestions):
-                            self.word_suggestions[i] = suggestions[i]
-                        else:
-                            self.word_suggestions[i] = " "
-                else:
-                    self.word_suggestions = [" ", " ", " ", " "]
-            else:
+            if len(self.recognized_text.strip()) == 0:
                 self.word_suggestions = [" ", " ", " ", " "]
+                return
+
+            current_word = self._current_word()
+            self.current_word = current_word
+
+            if len(current_word.strip()) == 0:
+                self.word_suggestions = [" ", " ", " ", " "]
+                return
+
+            if self.dictionary:
+                suggestions = self.dictionary.suggest(current_word)
+                self.word_suggestions = [
+                    suggestions[i] if i < len(suggestions) else " "
+                    for i in range(4)
+                ]
+                return
+
+            self.word_suggestions = self._fallback_suggestions(current_word, limit=4)
                 
         except Exception as e:
             logger.error(f"Error updating word suggestions: {e}")
@@ -392,8 +502,8 @@ class SignLanguageRecognizer:
             tuple: (processed_frame, recognition_results)
         """
         try:
-            # Detect hands in frame
-            hands = self.hd.findHands(frame, draw=False, flipType=True)
+            hands_result = self.hd.findHands(frame, draw=False, flipType=True)
+            hands = self._normalize_hands_result(hands_result)
             frame_copy = np.array(frame)
             
             # Initialize results
@@ -405,17 +515,17 @@ class SignLanguageRecognizer:
                 'hand_detected': False
             }
             
-            if hands[0]:  # Hand detected
+            if len(hands) > 0:
                 results['hand_detected'] = True
-                hand = hands[0]
-                hand_info = hand[0]
-                x, y, w, h = hand_info['bbox']
+                hand_info = hands[0]
+                x, y, w, h = hand_info.get('bbox', (0, 0, 0, 0))
                 
                 # Extract hand region with offset
-                hand_region = frame_copy[
-                    max(0, y - self.offset):y + h + self.offset,
-                    max(0, x - self.offset):x + w + self.offset
-                ]
+                x1 = max(0, x - self.offset)
+                y1 = max(0, y - self.offset)
+                x2 = min(frame_copy.shape[1], x + w + self.offset)
+                y2 = min(frame_copy.shape[0], y + h + self.offset)
+                hand_region = frame_copy[y1:y2, x1:x2]
                 
                 if hand_region.size > 0:
                     # Load white background for skeleton drawing
@@ -432,15 +542,20 @@ class SignLanguageRecognizer:
                     except:
                         white = np.ones((400, 400, 3), dtype=np.uint8) * 255
                     
-                    # Detect hand in cropped region
-                    hands_cropped = self.hd2.findHands(hand_region, draw=False, flipType=True)
+                    hands_cropped_result = self.hd2.findHands(hand_region, draw=False, flipType=True)
+                    hands_cropped = self._normalize_hands_result(hands_cropped_result)
                     
-                    if hands_cropped[0]:
+                    if len(hands_cropped) > 0:
                         hand_cropped = hands_cropped[0]
-                        landmarks = hand_cropped[0]['lmList']
+                        landmarks = hand_cropped.get('lmList', [])
+                        bbox_cropped = hand_cropped.get('bbox', None)
                         
                         # Draw hand skeleton
-                        skeleton_image = self.draw_hand_skeleton(white, landmarks, [0, 0, w, h])
+                        if bbox_cropped and len(bbox_cropped) == 4:
+                            skeleton_bbox = [0, 0, bbox_cropped[2], bbox_cropped[3]]
+                        else:
+                            skeleton_bbox = [0, 0, w, h]
+                        skeleton_image = self.draw_hand_skeleton(white, landmarks, skeleton_bbox)
                         
                         # Predict gesture
                         predicted_char = self.predict_gesture(skeleton_image, landmarks)

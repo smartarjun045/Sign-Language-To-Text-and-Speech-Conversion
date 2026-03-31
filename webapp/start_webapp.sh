@@ -29,18 +29,26 @@ if [ ! -f "app.py" ]; then
 fi
 
 # Check if virtual environment exists
-if [ ! -d ".venv" ]; then
+VENV_DIR="../.venv_mp"
+if [ ! -d "${VENV_DIR}" ]; then
+    VENV_DIR="../.venv_web"
+fi
+if [ ! -d "${VENV_DIR}" ]; then
+    VENV_DIR=".venv"
+fi
+if [ ! -d "${VENV_DIR}" ]; then
     echo -e "${YELLOW}Creating virtual environment...${NC}"
     python3 -m venv .venv
     if [ $? -ne 0 ]; then
         echo -e "${RED}ERROR: Failed to create virtual environment${NC}"
         exit 1
     fi
+    VENV_DIR=".venv"
 fi
 
 # Activate virtual environment
 echo -e "${YELLOW}Activating virtual environment...${NC}"
-source .venv/bin/activate
+source "${VENV_DIR}/bin/activate"
 
 # Check if requirements are installed
 if ! pip show flask &> /dev/null; then

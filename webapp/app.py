@@ -46,6 +46,8 @@ app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'slr:'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
+app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'flask_session')
+os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
 
 # Initialize Flask-Session
 Session(app)
@@ -104,9 +106,9 @@ def index():
 def login():
     """User login page"""
     if request.method == 'POST':
-        data = request.get_json()
-        username = data.get('username', '').strip()
-        password = data.get('password', '')
+        data = (request.get_json(silent=True) if request.is_json else None) or request.form or {}
+        username = (data.get('username') or '').strip()
+        password = data.get('password') or ''
         
         if not username or not password:
             return jsonify({'success': False, 'message': 'Username and password required'})
@@ -134,12 +136,12 @@ def login():
 def register():
     """User registration page"""
     if request.method == 'POST':
-        data = request.get_json()
+        data = (request.get_json(silent=True) if request.is_json else None) or request.form or {}
         
-        username = data.get('username', '').strip()
-        email = data.get('email', '').strip()
-        password = data.get('password', '')
-        full_name = data.get('full_name', '').strip()
+        username = (data.get('username') or '').strip()
+        email = (data.get('email') or '').strip()
+        password = data.get('password') or ''
+        full_name = (data.get('full_name') or '').strip()
         
         if not all([username, email, password]):
             return jsonify({'success': False, 'message': 'All fields are required'})
@@ -246,8 +248,8 @@ def speak_text():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
-    data = request.get_json()
-    text = data.get('text', '').strip()
+    data = (request.get_json(silent=True) if request.is_json else None) or request.form or {}
+    text = (data.get('text') or '').strip()
     
     if not text:
         return jsonify({'success': False, 'message': 'No text provided'})
@@ -305,8 +307,8 @@ def apply_suggestion():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
-    data = request.get_json()
-    suggestion = data.get('suggestion', '').strip()
+    data = (request.get_json(silent=True) if request.is_json else None) or request.form or {}
+    suggestion = (data.get('suggestion') or '').strip()
     
     if not suggestion:
         return jsonify({'success': False, 'message': 'No suggestion provided'})
@@ -411,9 +413,9 @@ def update_profile():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
-    data = request.get_json()
-    full_name = data.get('full_name', '').strip()
-    email = data.get('email', '').strip()
+    data = (request.get_json(silent=True) if request.is_json else None) or request.form or {}
+    full_name = (data.get('full_name') or '').strip()
+    email = (data.get('email') or '').strip()
     
     if not full_name or not email:
         return jsonify({'success': False, 'message': 'Name and email are required'})
@@ -435,9 +437,9 @@ def change_password():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
-    data = request.get_json()
-    current_password = data.get('current_password', '')
-    new_password = data.get('new_password', '')
+    data = (request.get_json(silent=True) if request.is_json else None) or request.form or {}
+    current_password = data.get('current_password') or ''
+    new_password = data.get('new_password') or ''
     
     if not current_password or not new_password:
         return jsonify({'success': False, 'message': 'Current and new passwords are required'})
@@ -459,8 +461,8 @@ def delete_account():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
-    data = request.get_json()
-    password = data.get('password', '')
+    data = (request.get_json(silent=True) if request.is_json else None) or request.form or {}
+    password = data.get('password') or ''
     
     if not password:
         return jsonify({'success': False, 'message': 'Password is required to delete account'})
@@ -481,14 +483,41 @@ def delete_account():
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""
+    if (
+        request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        or request.path.startswith('/api/')
+        or request.is_json
+        or 'application/json' in request.headers.get('Accept', '')
+    ):
+        return jsonify({'success': False, 'message': 'Not found'}), 404
     return render_template('error.html', 
                          error_code=404, 
                          error_message="Page not found"), 404
+
+@app.errorhandler(415)
+def unsupported_media_type(error):
+    if (
+        request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        or request.path.startswith('/api/')
+        or request.is_json
+        or 'application/json' in request.headers.get('Accept', '')
+    ):
+        return jsonify({'success': False, 'message': 'Unsupported media type'}), 415
+    return render_template('error.html', 
+                         error_code=415, 
+                         error_message="Unsupported media type"), 415
 
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors"""
     logger.error(f"Internal server error: {str(error)}")
+    if (
+        request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        or request.path.startswith('/api/')
+        or request.is_json
+        or 'application/json' in request.headers.get('Accept', '')
+    ):
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
     return render_template('error.html', 
                          error_code=500, 
                          error_message="Internal server error"), 500

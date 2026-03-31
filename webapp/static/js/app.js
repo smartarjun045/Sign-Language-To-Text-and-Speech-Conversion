@@ -410,6 +410,13 @@ class SignLanguageApp {
         
         try {
             this.setButtonLoading(this.ui.buttons.speak, true, 'Speaking...');
+
+            if ('speechSynthesis' in window) {
+                this.speakWithBrowser(text.trim())
+                    .then(() => this.showSuccess('Text spoken successfully'))
+                    .catch(() => this.showError('Speech synthesis failed'));
+                return;
+            }
             
             const response = await this.apiCall('/api/text/speak', 'POST', {
                 text: text.trim()
@@ -418,21 +425,24 @@ class SignLanguageApp {
             if (response.success) {
                 if (response.use_client_speech) {
                     // Use browser's speech synthesis as fallback
-                    await this.speakWithBrowser(response.text || text.trim());
+                    this.speakWithBrowser(response.text || text.trim())
+                        .catch(() => this.showError('Speech synthesis failed'));
                     this.showSuccess('Text spoken successfully');
                 } else {
                     this.showSuccess('Text spoken successfully');
                 }
             } else {
                 // Fallback to browser speech synthesis
-                await this.speakWithBrowser(text.trim());
+                this.speakWithBrowser(text.trim())
+                    .catch(() => this.showError('Speech synthesis failed'));
                 this.showSuccess('Text spoken successfully');
             }
         } catch (error) {
             console.error('Speech error:', error);
             // Always fallback to browser speech synthesis
             try {
-                await this.speakWithBrowser(text.trim());
+                this.speakWithBrowser(text.trim())
+                    .catch(() => this.showError('Speech synthesis failed'));
                 this.showSuccess('Text spoken successfully');
             } catch (fallbackError) {
                 this.showError('Speech synthesis failed');
@@ -474,17 +484,20 @@ class SignLanguageApp {
                 }
                 
                 // Add event listeners
+                let finished = false;
                 utterance.onstart = () => {
                     console.log('Speech synthesis started');
                 };
                 
                 utterance.onend = () => {
                     console.log('Speech synthesis completed');
+                    finished = true;
                     resolve(true);
                 };
                 
                 utterance.onerror = (event) => {
                     console.error('Speech synthesis error:', event.error);
+                    finished = true;
                     reject(new Error(`Speech synthesis failed: ${event.error}`));
                 };
                 
@@ -493,7 +506,7 @@ class SignLanguageApp {
                 
                 // Fallback timeout in case events don't fire
                 setTimeout(() => {
-                    if (!utterance.onend) {
+                    if (!finished) {
                         resolve(true);
                     }
                 }, Math.max(text.length * 100, 3000)); // Estimate speech duration
