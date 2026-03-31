@@ -1,0 +1,115 @@
+# Flask Framework and Extensions
+Flask==2.3.3
+Flask-Session==0.5.0
+Werkzeug==2.3.7
+
+# Computer Vision and Machine Learning (Windows-optimized versions)
+opencv-python==4.8.0.76
+tensorflow==2.12.0
+keras==2.12.0
+cvzone==1.5.6
+mediapipe==0.10.3
+numpy==1.24.3
+
+# Text Processing and Dictionary
+pyenchant==3.2.2
+
+# Text-to-Speech
+pyttsx3==2.90
+
+# Image Processing
+Pillow==9.5.0
+
+# Data Handling
+pandas==2.0.3
+scipy==1.10.1
+
+# Web and API
+requests==2.31.0
+urllib3==1.26.16
+
+# Development and Debugging
+python-dotenv==1.0.0
+
+# System and OS Support
+psutil==5.9.5
+
+# Additional ML dependencies
+scikit-learn==1.2.2
+matplotlib==3.7.1
+
+# JSON and configuration
+jsonschema==4.17.3
+
+# Date and time utilities
+python-dateutil==2.8.2
+
+# Security and hashing
+bcrypt==4.0.1
+cryptography==41.0.4
+
+# HTTP client
+httpx==0.24.1
+
+# WebSocket support (optional for real-time features)
+Flask-SocketIO==5.3.4
+python-socketio==5.8.0
+
+# Environment and configuration
+configparser==5.3.0
+
+# Logging and monitoring
+loguru==0.7.0
+
+# File handling
+pathlib2==2.3.7
+
+# Regular expressions
+regex==2023.6.3
+
+# Memory management
+memory-profiler==0.60.0
+
+# GPU support (optional - for CUDA acceleration)
+# tensorflow-gpu==2.13.0  # Uncomment if using GPU
+
+# Development tools (optional - for development environment)
+# pytest==7.4.2
+# pytest-flask==1.2.0
+# black==23.7.0
+# flake8==6.0.0
+
+# Production server (optional - for deployment)
+# gunicorn==21.2.0
+# eventlet==0.33.3
+
+# Note: Some packages may require additional system dependencies:
+# 
+# For pyenchant (dictionary functionality):
+# - Windows: No additional setup required
+# - Ubuntu/Debian: sudo apt-get install libenchant-2-2
+# - CentOS/RHEL: sudo yum install enchant2
+# - macOS: brew install enchant
+#
+# For OpenCV:
+# - May require additional system libraries depending on features used
+# - For video capture: may need additional codecs
+#
+# For MediaPipe:
+# - Requires Python 3.7-3.11
+# - May require additional system dependencies on Linux
+#
+# For pyttsx3 (text-to-speech):
+# - Windows: No additional setup required (uses SAPI)
+# - Linux: May require espeak: sudo apt-get install espeak
+# - macOS: No additional setup required (uses built-in speech)
+#
+# For PyAudio (audio processing):
+# - Windows: Usually works out of the box
+# - Ubuntu/Debian: sudo apt-get install portaudio19-dev
+# - CentOS/RHEL: sudo yum install portaudio-devel
+# - macOS: brew install portaudio
+#
+# Minimum Python version: 3.8
+# Recommended Python version: 3.9 or 3.10
+# Maximum tested Python version: 3.11

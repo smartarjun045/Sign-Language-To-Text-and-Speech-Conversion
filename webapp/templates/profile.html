@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Sign Language Recognition</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="app-page">
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <div class="logo">
+                <i class="fas fa-hands"></i>
+                <span>Gesture Voice: Sign Language Interpreter</span>
+            </div>
+        </div>
+        
+        <div class="nav-controls">
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <span>{{ user.username if user else 'User' }}</span>
+            </div>
+            <div class="nav-buttons">
+                <a href="{{ url_for('index') }}" class="nav-btn" title="Dashboard">
+                    <i class="fas fa-home"></i>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-btn" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="profile-page-container">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <h1>User Profile</h1>
+            <p class="profile-subtitle">Manage your account information</p>
+        </div>
+
+        <div class="profile-content">
+            <!-- Personal Information Card -->
+            <div class="profile-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-id-card"></i> Personal Information</h2>
+                </div>
+                <div class="card-body">
+                    <div class="profile-grid">
+                        <div class="profile-item">
+                            <label>Full Name:</label>
+                            <span class="profile-value">{{ user.full_name if user and user.full_name else 'Not provided' }}</span>
+                        </div>
+                        <div class="profile-item">
+                            <label>Username:</label>
+                            <span class="profile-value username">{{ user.username if user else 'N/A' }}</span>
+                        </div>
+                        <div class="profile-item">
+                            <label>Email Address:</label>
+                            <span class="profile-value">{{ user.email if user else 'N/A' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Statistics Card -->
+            <div class="profile-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-chart-bar"></i> Account Statistics</h2>
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Member Since</span>
+                                <span class="stat-value">{{ user.created_at[:10] if user and user.created_at else 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i class="fas fa-sign-in-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Total Logins</span>
+                                <span class="stat-value">{{ user.login_count if user else 0 }}</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Last Login</span>
+                                <span class="stat-value">{{ user.last_login[:10] if user and user.last_login else 'Never' }}</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i class="fas fa-hands"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Recognition Sessions</span>
+                                <span class="stat-value">{{ user.session_count if user and user.session_count else 0 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Actions Card -->
+            <div class="profile-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-cogs"></i> Account Actions</h2>
+                </div>
+                <div class="card-body">
+                    <div class="action-buttons">
+                        <button class="profile-action-btn primary" onclick="showChangePasswordModal()">
+                            <i class="fas fa-key"></i>
+                            Change Password
+                        </button>
+                        <button class="profile-action-btn secondary" onclick="showEditProfileModal()">
+                            <i class="fas fa-edit"></i>
+                            Edit Profile
+                        </button>
+                        <button class="profile-action-btn warning" onclick="showDeleteAccountModal()">
+                            <i class="fas fa-trash-alt"></i>
+                            Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Navigation Card -->
+            <div class="profile-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-compass"></i> Quick Navigation</h2>
+                </div>
+                <div class="card-body">
+                    <div class="quick-nav">
+                        <a href="{{ url_for('index') }}" class="quick-nav-btn">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('index') }}#help" class="quick-nav-btn">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Help</span>
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="quick-nav-btn logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-key"></i> Change Password</h3>
+                <button onclick="hideModal('changePasswordModal')" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password:</label>
+                        <input type="password" id="currentPassword" name="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password:</label>
+                        <input type="password" id="newPassword" name="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password:</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="profile-action-btn primary">
+                            <i class="fas fa-save"></i> Change Password
+                        </button>
+                        <button type="button" onclick="hideModal('changePasswordModal')" class="profile-action-btn secondary">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit Profile</h3>
+                <button onclick="hideModal('editProfileModal')" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <div class="form-group">
+                        <label for="editFullName">Full Name:</label>
+                        <input type="text" id="editFullName" name="fullName" value="{{ user.full_name if user and user.full_name else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmail">Email Address:</label>
+                        <input type="email" id="editEmail" name="email" value="{{ user.email if user else '' }}" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="profile-action-btn primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                        <button type="button" onclick="hideModal('editProfileModal')" class="profile-action-btn secondary">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div id="deleteAccountModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> Delete Account</h3>
+                <button onclick="hideModal('deleteAccountModal')" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="warning-message">
+                    <p>⚠️ <strong>Warning:</strong> This action cannot be undone!</p>
+                    <p>Are you sure you want to permanently delete your account? All your data will be lost.</p>
+                </div>
+                <div class="modal-actions">
+                    <button onclick="confirmDeleteAccount()" class="profile-action-btn danger">
+                        <i class="fas fa-trash-alt"></i> Yes, Delete Account
+                    </button>
+                    <button onclick="hideModal('deleteAccountModal')" class="profile-action-btn secondary">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="profileMessage" class="profile-message hidden">
+        <div class="message-content">
+            <i class="fas fa-check-circle"></i>
+            <span id="messageText"></span>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+</body>
+</html>

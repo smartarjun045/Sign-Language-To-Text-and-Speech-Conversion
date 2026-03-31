@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Language Recognition - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo">
+                    <i class="fas fa-hands"></i>
+                    <span>Gesture Voice: Sign Language Interpreter</span>
+                </div>
+                <h1>Welcome Back</h1>
+                <p>Sign in to access your account</p>
+            </div>
+            
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="username">
+                        <i class="fas fa-user"></i>
+                        Username
+                    </label>
+                    <input type="text" id="username" name="username" required 
+                           placeholder="Enter your username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock"></i>
+                        Password
+                    </label>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Enter your password">
+                </div>
+                
+                <button type="submit" class="auth-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Sign In
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Don't have an account? 
+                   <a href="{{ url_for('register') }}">Sign up here</a>
+                </p>
+            </div>
+            
+            <div id="message" class="message hidden"></div>
+        </div>
+        
+        <div class="auth-info">
+            <h2>Sign Language Recognition System</h2>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <i class="fas fa-video"></i>
+                    <span>Real-time Camera Recognition</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-hand-paper"></i>
+                    <span>A-Z ASL Fingerspelling</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-volume-up"></i>
+                    <span>Text-to-Speech Synthesis</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>Smart Word Suggestions</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>
