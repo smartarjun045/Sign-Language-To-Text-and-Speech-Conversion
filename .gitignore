@@ -40,6 +40,8 @@ env/
 # Session files
 current_session.json
 users.json
+webapp/flask_session/
+webapp/instance/
 
 # User data
 user_data/
