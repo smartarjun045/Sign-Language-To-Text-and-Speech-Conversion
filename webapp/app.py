@@ -258,11 +258,11 @@ def speak_text():
     
     try:
         if speech_synthesis:
-            # Use immediate speech instead of queued speech for web interface
-            success = speech_synthesis.speak_immediately(text)
+            # Queue only the latest request so the endpoint returns immediately.
+            success = speech_synthesis.speak_latest(text)
             if success:
                 logger.info(f"Text-to-speech for user {session['user_id']}: {text[:50]}...")
-                return jsonify({'success': True, 'message': 'Speech synthesis completed'})
+                return jsonify({'success': True, 'message': 'Speech synthesis started'})
             else:
                 return jsonify({'success': False, 'message': 'Speech synthesis failed'})
         else:

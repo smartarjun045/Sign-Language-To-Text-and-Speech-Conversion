@@ -410,6 +410,13 @@ class SignLanguageApp {
         
         try {
             this.setButtonLoading(this.ui.buttons.speak, true, 'Speaking...');
+
+            // Prefer browser speech for reliable audio output from the active user session.
+            if ('speechSynthesis' in window) {
+                await this.speakWithBrowser(text.trim());
+                this.showSuccess('Text spoken successfully');
+                return;
+            }
             
             const response = await this.apiCall('/api/text/speak', 'POST', {
                 text: text.trim()
@@ -447,10 +454,24 @@ class SignLanguageApp {
         // Use browser's built-in speech synthesis
         return new Promise((resolve, reject) => {
             try {
+                let isFinished = false;
+
                 // Check if browser supports speech synthesis
                 if (!('speechSynthesis' in window)) {
                     throw new Error('Speech synthesis not supported in this browser');
                 }
+
+                const finish = (ok, err = null) => {
+                    if (isFinished) return;
+                    isFinished = true;
+                    clearTimeout(timeoutId);
+
+                    if (ok) {
+                        resolve(true);
+                    } else {
+                        reject(err || new Error('Speech synthesis failed'));
+                    }
+                };
                 
                 // Cancel any ongoing speech
                 window.speechSynthesis.cancel();
@@ -480,23 +501,23 @@ class SignLanguageApp {
                 
                 utterance.onend = () => {
                     console.log('Speech synthesis completed');
-                    resolve(true);
+                    finish(true);
                 };
                 
                 utterance.onerror = (event) => {
                     console.error('Speech synthesis error:', event.error);
-                    reject(new Error(`Speech synthesis failed: ${event.error}`));
+                    finish(false, new Error(`Speech synthesis failed: ${event.error}`));
                 };
+
+                // Fallback timeout in case browser doesn't fire completion events.
+                const timeoutMs = Math.max(text.length * 120, 4000);
+                const timeoutId = setTimeout(() => {
+                    console.warn('Speech timeout reached; resolving to keep UI responsive');
+                    finish(true);
+                }, timeoutMs);
                 
                 // Speak the text
                 window.speechSynthesis.speak(utterance);
-                
-                // Fallback timeout in case events don't fire
-                setTimeout(() => {
-                    if (!utterance.onend) {
-                        resolve(true);
-                    }
-                }, Math.max(text.length * 100, 3000)); // Estimate speech duration
                 
             } catch (error) {
                 console.error('Browser speech synthesis error:', error);
