@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Use - Sign Language Recognition</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="app-page">
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <div class="logo">
+                <i class="fas fa-hands"></i>
+                <span>Gesture Voice: Sign Language Interpreter</span>
+            </div>
+        </div>
+        
+        <div class="nav-controls">
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <span>{{ user.username if user else 'User' }}</span>
+            </div>
+            <div class="nav-buttons">
+                <a href="{{ url_for('index') }}" class="nav-btn" title="Dashboard">
+                    <i class="fas fa-home"></i>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-btn" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="help-page-container">
+        <div class="help-page-header">
+            <h1><i class="fas fa-book"></i> How to Use Gesture Voice</h1>
+            <p class="help-page-subtitle">Complete guide to sign language recognition and system usage</p>
+        </div>
+
+        <div class="help-page-content">
+            <!-- Getting Started Section -->
+            <div class="help-card">
+                <div class="help-card-header">
+                    <h2><i class="fas fa-play-circle"></i> Getting Started</h2>
+                </div>
+                <div class="help-card-body">
+                    <ol class="instruction-list">
+                        <li><strong>Click "Start Camera"</strong> to activate your webcam and begin the recognition process</li>
+                        <li><strong>Check lighting</strong> - Ensure good lighting on your hand for better accuracy</li>
+                        <li><strong>Position your hand</strong> clearly in the camera view (centered)</li>
+                        <li><strong>Click "Start Recognition"</strong> to begin gesture detection</li>
+                        <li><strong>Make ASL fingerspelling gestures</strong> (A-Z) - hold each gesture steady for 1-2 seconds</li>
+                        <li><strong>Watch the text output</strong> - recognized characters appear in the text box</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Tips for Better Recognition -->
+            <div class="help-card">
+                <div class="help-card-header">
+                    <h2><i class="fas fa-lightbulb"></i> Tips for Better Recognition</h2>
+                </div>
+                <div class="help-card-body">
+                    <div class="tips-grid">
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Good Lighting</h4>
+                                <p>Ensure bright, even lighting on your hand. Avoid shadows and backlighting.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Plain Background</h4>
+                                <p>Use a plain background (white or light colored) when possible for better hand detection.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-hand-paper"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Hand Visibility</h4>
+                                <p>Keep your entire hand visible in the frame. Ensure no parts are cut off.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Hold Gestures</h4>
+                                <p>Hold each gesture steady for 1-2 seconds for the system to recognize it properly.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-arrows-alt"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Consistent Distance</h4>
+                                <p>Maintain a consistent distance from the camera (about 30-60 cm away).</p>
+                            </div>
+                        </div>
+                        
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Clear Gestures</h4>
+                                <p>Make clear, deliberate gestures. Avoid rapid movements between characters.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Special Gestures -->
+            <div class="help-card">
+                <div class="help-card-header">
+                    <h2><i class="fas fa-star"></i> Special Gestures</h2>
+                </div>
+                <div class="help-card-body">
+                    <div class="special-gestures-grid">
+                        <div class="gesture-item">
+                            <h4><i class="fas fa-arrow-right"></i> SPACE</h4>
+                            <p>Creates a space between words in your text</p>
+                        </div>
+                        <div class="gesture-item">
+                            <h4><i class="fas fa-forward"></i> NEXT</h4>
+                            <p>Confirms the current character and prepares for the next one</p>
+                        </div>
+                        <div class="gesture-item">
+                            <h4><i class="fas fa-backspace"></i> BACKSPACE</h4>
+                            <p>Deletes the last recognized character from the text</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ASL Alphabet Chart -->
+            <div class="help-card alphabet-card">
+                <div class="help-card-header">
+                    <h2><i class="fas fa-hand-fist"></i> American Sign Language (ASL) Alphabet</h2>
+                </div>
+                <div class="help-card-body">
+                    <p class="alphabet-description">
+                        Below is the complete American Sign Language (ASL) alphabet chart. Each letter is represented by a specific hand shape and position. 
+                        Practice these gestures to improve your recognition accuracy.
+                    </p>
+                        <img src="{{ url_for('static', filename='images/asl-alphabet.jpg') }}" 
+                         alt="ASL Sign Language Alphabet Chart" 
+                         class="alphabet-chart-full"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="alphabet-fallback" style="display:none;">
+                        <div class="fallback-content">
+                            <h4>American Sign Language Alphabet</h4>
+                            <p class="alphabet-letters">
+                                <span class="letter-box">A</span>
+                                <span class="letter-box">B</span>
+                                <span class="letter-box">C</span>
+                                <span class="letter-box">D</span>
+                                <span class="letter-box">E</span>
+                                <span class="letter-box">F</span>
+                                <span class="letter-box">G</span>
+                                <span class="letter-box">H</span>
+                                <span class="letter-box">I</span>
+                                <span class="letter-box">J</span>
+                                <span class="letter-box">K</span>
+                                <span class="letter-box">L</span>
+                                <span class="letter-box">M</span>
+                                <span class="letter-box">N</span>
+                                <span class="letter-box">O</span>
+                                <span class="letter-box">P</span>
+                                <span class="letter-box">Q</span>
+                                <span class="letter-box">R</span>
+                                <span class="letter-box">S</span>
+                                <span class="letter-box">T</span>
+                                <span class="letter-box">U</span>
+                                <span class="letter-box">V</span>
+                                <span class="letter-box">W</span>
+                                <span class="letter-box">X</span>
+                                <span class="letter-box">Y</span>
+                                <span class="letter-box">Z</span>
+                            </p>
+                            <p style="margin-top: 1rem; font-style: italic; color: #7f8c8d;">
+                                Each letter has a specific hand shape and palm orientation. 
+                                Visit online ASL resources to learn the exact details of each sign.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Overview -->
+            <div class="help-card">
+                <div class="help-card-header">
+                    <h2><i class="fas fa-cube"></i> System Features</h2>
+                </div>
+                <div class="help-card-body">
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <h4>Real-time Camera</h4>
+                            <p>Live webcam feed with hand detection and tracking</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-hand-spock"></i>
+                            </div>
+                            <h4>Gesture Recognition</h4>
+                            <p>AI-powered recognition of ASL fingerspelling A-Z</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-volume-up"></i>
+                            </div>
+                            <h4>Text to Speech</h4>
+                            <p>Synthesized audio output of recognized text</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-lightbulb"></i>
+                            </div>
+                            <h4>Smart Suggestions</h4>
+                            <p>Word suggestions to improve text accuracy</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <h4>User Profiles</h4>
+                            <p>Personal dashboard with statistics and history</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-cogs"></i>
+                            </div>
+                            <h4>Easy Controls</h4>
+                            <p>Simple interface with intuitive buttons and settings</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Troubleshooting -->
+            <div class="help-card">
+                <div class="help-card-header">
+                    <h2><i class="fas fa-tools"></i> Troubleshooting</h2>
+                </div>
+                <div class="help-card-body">
+                    <div class="troubleshoot-item">
+                        <h4>❓ Camera not working?</h4>
+                        <p>Check if your webcam is connected and browser has permission to access it. Refresh the page and try again.</p>
+                    </div>
+                    <div class="troubleshoot-item">
+                        <h4>❓ Poor recognition accuracy?</h4>
+                        <p>Improve lighting on your hand, use a plain background, and ensure your entire hand is visible. Hold gestures steady for 1-2 seconds.</p>
+                    </div>
+                    <div class="troubleshoot-item">
+                        <h4>❓ Text not appearing?</h4>
+                        <p>Ensure recognition is started and your hand is clearly visible in the camera frame. Try making the gesture more deliberate.</p>
+                    </div>
+                    <div class="troubleshoot-item">
+                        <h4>❓ Speech synthesis not working?</h4>
+                        <p>Check your system volume and browser settings. The system has a fallback to browser speech synthesis if needed.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back to Dashboard Button -->
+        <div class="help-page-footer">
+            <a href="{{ url_for('index') }}" class="btn-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+</body>
+</html>

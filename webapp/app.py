@@ -43,8 +43,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here-change-in-production'
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_KEY_PREFIX'] = 'slr:'
+app.config['SESSION_USE_SIGNER'] = False
+app.config['SESSION_KEY_PREFIX'] = 'slr_'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'instance', 'flask_session')
 
@@ -69,6 +69,7 @@ except Exception as e:
 camera = None
 camera_active = False
 recognition_active = False
+recognition_start_time = None
 current_frame = None
 recognition_results = {
     'current_character': '',
@@ -104,33 +105,49 @@ def index():
     user_info = user_auth.get_user_info(session['user_id'])
     return render_template('index.html', user=user_info)
 
+@app.route('/help')
+def help():
+    """Help and instructions page"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user_info = user_auth.get_user_info(session['user_id'])
+    return render_template('help.html', user=user_info)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """User login page"""
     if request.method == 'POST':
-        data = request.get_json()
-        username = data.get('username', '').strip()
-        password = data.get('password', '')
-        
-        if not username or not password:
-            return jsonify({'success': False, 'message': 'Username and password required'})
-        
-        success, message, user_info = user_auth.authenticate_user(username, password)
-        
-        if success:
-            session['user_id'] = username
-            session['login_time'] = datetime.now().isoformat()
-            session.permanent = True
+        try:
+            data = request.get_json(force=True, silent=False)
+            if data is None:
+                data = {}
             
-            logger.info(f"User {username} logged in successfully")
-            return jsonify({
-                'success': True, 
-                'message': 'Login successful',
-                'redirect': url_for('index')
-            })
-        else:
-            logger.warning(f"Failed login attempt for username: {username}")
-            return jsonify({'success': False, 'message': message})
+            username = data.get('username', '').strip()
+            password = data.get('password', '')
+            
+            if not username or not password:
+                return jsonify({'success': False, 'message': 'Username and password required'})
+            
+            success, message, user_info = user_auth.authenticate_user(username, password)
+            
+            if success:
+                session['user_id'] = username
+                session['login_time'] = datetime.now().isoformat()
+                session.permanent = True
+                
+                logger.info(f"User {username} logged in successfully")
+                return jsonify({
+                    'success': True, 
+                    'message': 'Login successful',
+                    'redirect': url_for('index')
+                })
+            else:
+                logger.warning(f"Failed login attempt for username: {username}")
+                return jsonify({'success': False, 'message': message})
+        except Exception as e:
+            logger.error(f"Login error: {str(e)}", exc_info=True)
+            return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
     
     return render_template('login.html')
 
@@ -138,27 +155,33 @@ def login():
 def register():
     """User registration page"""
     if request.method == 'POST':
-        data = request.get_json()
-        
-        username = data.get('username', '').strip()
-        email = data.get('email', '').strip()
-        password = data.get('password', '')
-        full_name = data.get('full_name', '').strip()
-        
-        if not all([username, email, password]):
-            return jsonify({'success': False, 'message': 'All fields are required'})
-        
-        success, message = user_auth.register_user(username, email, password, full_name)
-        
-        if success:
-            logger.info(f"New user registered: {username}")
-            return jsonify({
-                'success': True, 
-                'message': 'Registration successful! Please log in.',
-                'redirect': url_for('login')
-            })
-        else:
-            return jsonify({'success': False, 'message': message})
+        try:
+            data = request.get_json(force=True, silent=False)
+            if data is None:
+                data = {}
+            
+            username = data.get('username', '').strip()
+            email = data.get('email', '').strip()
+            password = data.get('password', '')
+            full_name = data.get('full_name', '').strip()
+            
+            if not all([username, email, password]):
+                return jsonify({'success': False, 'message': 'All fields are required'})
+            
+            success, message = user_auth.register_user(username, email, password, full_name)
+            
+            if success:
+                logger.info(f"New user registered: {username}")
+                return jsonify({
+                    'success': True, 
+                    'message': 'Registration successful! Please log in.',
+                    'redirect': url_for('login')
+                })
+            else:
+                return jsonify({'success': False, 'message': message})
+        except Exception as e:
+            logger.error(f"Registration error: {str(e)}", exc_info=True)
+            return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
     
     return render_template('register.html')
 
@@ -207,7 +230,7 @@ def stop_camera():
 @app.route('/api/recognition/start', methods=['POST'])
 def start_recognition():
     """Start sign language recognition"""
-    global recognition_active
+    global recognition_active, recognition_start_time
     
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
@@ -216,20 +239,28 @@ def start_recognition():
         return jsonify({'success': False, 'message': 'Camera not active'})
     
     recognition_active = True
+    recognition_start_time = time.time()
     logger.info(f"Recognition started for user {session['user_id']}")
     return jsonify({'success': True, 'message': 'Recognition started'})
 
 @app.route('/api/recognition/stop', methods=['POST'])
 def stop_recognition():
     """Stop sign language recognition"""
-    global recognition_active
+    global recognition_active, recognition_start_time
     
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
+    # Calculate session duration and update user stats
+    session_duration = 0
+    if recognition_start_time is not None:
+        session_duration = int(time.time() - recognition_start_time)
+        user_auth.update_session_stats(session['user_id'], session_duration)
+    
     recognition_active = False
-    logger.info(f"Recognition stopped for user {session['user_id']}")
-    return jsonify({'success': True, 'message': 'Recognition stopped'})
+    recognition_start_time = None
+    logger.info(f"Recognition stopped for user {session['user_id']} (duration: {session_duration}s)")
+    return jsonify({'success': True, 'message': 'Recognition stopped', 'duration': session_duration})
 
 @app.route('/api/recognition/status')
 def recognition_status():
@@ -250,7 +281,7 @@ def speak_text():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
-    data = request.get_json()
+    data = request.get_json(force=True, silent=False) or {}
     text = data.get('text', '').strip()
     
     if not text:
@@ -309,7 +340,7 @@ def apply_suggestion():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
-    data = request.get_json()
+    data = request.get_json(force=True, silent=False) or {}
     suggestion = data.get('suggestion', '').strip()
     
     if not suggestion:
@@ -390,10 +421,10 @@ def profile():
         session.clear()
         return redirect(url_for('login'))
     
-    # Add some statistics
+    # Add some statistics with correct field mappings
     user_info['join_date'] = user_info.get('created_at', 'Unknown')
-    user_info['total_sessions'] = user_info.get('total_sessions', 0)
-    user_info['words_recognized'] = user_info.get('words_recognized', 0)
+    user_info['recognition_sessions'] = user_info.get('session_count', 0)
+    user_info['total_recognition_time'] = user_info.get('total_recognition_time', 0)
     
     return render_template('profile.html', user=user_info)
 
@@ -415,7 +446,7 @@ def update_profile():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
-    data = request.get_json()
+    data = request.get_json(force=True, silent=False) or {}
     full_name = data.get('full_name', '').strip()
     email = data.get('email', '').strip()
     
@@ -439,7 +470,7 @@ def change_password():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
-    data = request.get_json()
+    data = request.get_json(force=True, silent=False) or {}
     current_password = data.get('current_password', '')
     new_password = data.get('new_password', '')
     
@@ -463,7 +494,7 @@ def delete_account():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not authenticated'})
     
-    data = request.get_json()
+    data = request.get_json(force=True, silent=False) or {}
     password = data.get('password', '')
     
     if not password:

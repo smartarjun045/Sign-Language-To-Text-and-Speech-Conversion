@@ -23,8 +23,14 @@
                 <span>Welcome, {{ user.username if user else 'User' }}</span>
             </div>
             <div class="nav-buttons">
-                <a href="/profile" class="nav-btn" title="Profile">
+                <a href="{{ url_for('index') }}" class="nav-btn" title="Home">
+                    <i class="fas fa-home"></i>
+                </a>
+                <a href="{{ url_for('profile') }}" class="nav-btn" title="Profile Settings">
                     <i class="fas fa-cog"></i>
+                </a>
+                <a href="{{ url_for('help') }}" class="nav-btn" title="How to Use">
+                    <i class="fas fa-book"></i>
                 </a>
                 <a href="{{ url_for('logout') }}" class="nav-btn" title="Logout">
                     <i class="fas fa-sign-out-alt"></i>
@@ -92,7 +98,7 @@
                 </div>
                 <img id="videoFeed" class="video-feed" style="display: none;" alt="Video Feed">
             </div>
-            
+
             <!-- Current Character Display -->
             <div class="character-display">
                 <div class="character-label">Current Character:</div>
@@ -168,6 +174,19 @@
                         <li><strong>Next:</strong> Confirms the current character</li>
                         <li><strong>Backspace:</strong> Deletes the last character</li>
                     </ul>
+                </div>
+
+                <div class="help-section alphabet-section">
+                    <h4>Sign Language Alphabet Reference</h4>
+                    <img src="{{ url_for('static', filename='images/asl-alphabet.png') }}" 
+                         alt="ASL Sign Language Alphabet Chart" 
+                         class="alphabet-chart"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="alphabet-guide" style="display:none;">
+                        <p><strong>American Sign Language (ASL) Alphabet:</strong></p>
+                        <p>A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z</p>
+                        <p>Each letter is represented by a specific hand shape and position. Make sure to hold each gesture for 1-2 seconds for better recognition.</p>
+                    </div>
                 </div>
             </div>
         </div>

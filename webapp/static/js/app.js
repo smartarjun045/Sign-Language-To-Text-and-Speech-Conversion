@@ -8,10 +8,12 @@ class SignLanguageApp {
         this.isInitialized = false;
         this.camera = {
             active: false,
-            stream: null
+            stream: null,
+            pending: false
         };
         this.recognition = {
             active: false,
+            pending: false,
             results: {
                 current_character: '',
                 sentence: '',
@@ -294,7 +296,9 @@ class SignLanguageApp {
 
     // Camera Control Methods
     async startCamera() {
-        if (this.camera.active) return;
+        if (this.camera.active || this.camera.pending) return;
+        this.camera.pending = true;
+        this.updateCameraUI();
         
         this.showLoading('Starting camera...');
         
@@ -313,6 +317,8 @@ class SignLanguageApp {
             console.error('Camera start error:', error);
             this.showError('Failed to start camera. Please check permissions.');
         } finally {
+            this.camera.pending = false;
+            this.updateCameraUI();
             this.hideLoading();
         }
     }
@@ -362,7 +368,9 @@ class SignLanguageApp {
             return;
         }
         
-        if (this.recognition.active) return;
+        if (this.recognition.active || this.recognition.pending) return;
+        this.recognition.pending = true;
+        this.updateRecognitionUI();
         
         try {
             const response = await this.apiCall('/api/recognition/start', 'POST');
@@ -377,6 +385,9 @@ class SignLanguageApp {
         } catch (error) {
             console.error('Recognition start error:', error);
             this.showError('Failed to start recognition');
+        } finally {
+            this.recognition.pending = false;
+            this.updateRecognitionUI();
         }
     }
 
@@ -574,19 +585,28 @@ class SignLanguageApp {
     updateCameraUI() {
         // Update button states
         if (this.ui.buttons.startCamera) {
-            this.ui.buttons.startCamera.disabled = this.camera.active;
+            this.ui.buttons.startCamera.disabled = this.camera.active || this.camera.pending;
         }
         if (this.ui.buttons.stopCamera) {
             this.ui.buttons.stopCamera.disabled = !this.camera.active;
         }
         if (this.ui.buttons.startRecognition) {
-            this.ui.buttons.startRecognition.disabled = !this.camera.active;
+            this.ui.buttons.startRecognition.disabled = !this.camera.active || this.recognition.active || this.recognition.pending;
+        }
+
+        if (this.ui.buttons.startCamera) {
+            if (this.camera.pending) {
+                this.setButtonLoading(this.ui.buttons.startCamera, true, 'Starting...');
+            } else if (this.ui.buttons.startCamera.dataset.originalContent) {
+                this.setButtonLoading(this.ui.buttons.startCamera, false);
+            }
         }
         
         // Update status display
         const status = this.ui.statusElements.camera;
         if (status.text && status.light) {
-            status.text.textContent = `Camera: ${this.camera.active ? 'On' : 'Off'}`;
+            const cameraState = this.camera.pending ? 'Starting' : (this.camera.active ? 'On' : 'Off');
+            status.text.textContent = `Camera: ${cameraState}`;
             status.light.className = `status-light ${this.camera.active ? 'on' : 'off'}`;
         }
     }
@@ -594,16 +614,25 @@ class SignLanguageApp {
     updateRecognitionUI() {
         // Update button states
         if (this.ui.buttons.startRecognition) {
-            this.ui.buttons.startRecognition.disabled = !this.camera.active || this.recognition.active;
+            this.ui.buttons.startRecognition.disabled = !this.camera.active || this.recognition.active || this.recognition.pending;
         }
         if (this.ui.buttons.stopRecognition) {
             this.ui.buttons.stopRecognition.disabled = !this.recognition.active;
+        }
+
+        if (this.ui.buttons.startRecognition) {
+            if (this.recognition.pending) {
+                this.setButtonLoading(this.ui.buttons.startRecognition, true, 'Starting...');
+            } else if (this.ui.buttons.startRecognition.dataset.originalContent) {
+                this.setButtonLoading(this.ui.buttons.startRecognition, false);
+            }
         }
         
         // Update status display
         const status = this.ui.statusElements.recognition;
         if (status.text && status.light) {
-            status.text.textContent = `Recognition: ${this.recognition.active ? 'On' : 'Off'}`;
+            const recognitionState = this.recognition.pending ? 'Starting' : (this.recognition.active ? 'On' : 'Off');
+            status.text.textContent = `Recognition: ${recognitionState}`;
             status.light.className = `status-light ${this.recognition.active ? 'on' : 'off'}`;
         }
     }
@@ -785,8 +814,9 @@ class SignLanguageApp {
         
         if (loading) {
             button.disabled = true;
-            const originalContent = button.innerHTML;
-            button.dataset.originalContent = originalContent;
+            if (!button.dataset.originalContent) {
+                button.dataset.originalContent = button.innerHTML;
+            }
             
             const loadingText = customText || 'Loading...';
             button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
