@@ -556,6 +556,7 @@ body {
 .app-page {
     min-height: 100vh;
     background-color: var(--background-color);
+    overflow: hidden;
 }
 
 .navbar {
@@ -615,12 +616,14 @@ body {
 
 .main-container {
     display: grid;
-    grid-template-columns: 260px minmax(0, 1fr) 310px;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
-    max-width: 1440px;
+    grid-template-columns: 240px minmax(0, 1.2fr) 290px;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    max-width: 100vw;
     margin: 0 auto;
-    min-height: calc(100vh - 72px);
+    height: calc(100vh - 72px);
+    min-height: 0;
+    align-items: start;
 }
 
 /* Continue with control panel, video section, etc... */
@@ -764,16 +767,18 @@ body {
 .video-section {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: 0.5rem;
+    min-height: 0;
 }
 
 .video-container {
     background: var(--card-background);
     border-radius: var(--border-radius-lg);
-    padding: var(--spacing-md);
+    padding: 0.7rem;
     box-shadow: var(--shadow-sm);
     position: relative;
-    aspect-ratio: 16/10;
+    height: clamp(380px, calc(100vh - 220px), 560px);
+    overflow: hidden;
 }
 
 .video-placeholder {
@@ -806,7 +811,7 @@ body {
 .character-display {
     background: var(--card-background);
     border-radius: var(--border-radius-lg);
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: 0.55rem 0.9rem;
     box-shadow: var(--shadow-sm);
     text-align: center;
 }
@@ -832,13 +837,14 @@ body {
 .text-section {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: 0.5rem;
+    min-height: 0;
 }
 
 .text-output {
     background: var(--card-background);
     border-radius: var(--border-radius-lg);
-    padding: var(--spacing-md);
+    padding: 0.85rem;
     box-shadow: var(--shadow-sm);
 }
 
@@ -887,7 +893,7 @@ body {
 .suggestions-panel {
     background: var(--card-background);
     border-radius: var(--border-radius-lg);
-    padding: var(--spacing-md);
+    padding: 0.85rem;
     box-shadow: var(--shadow-sm);
 }
 
@@ -1323,9 +1329,15 @@ body {
 }
 
 @media (max-width: 992px) {
+    .app-page {
+        overflow: auto;
+    }
+
     .main-container {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto auto;
+        height: auto;
+        max-width: 100%;
     }
     
     .control-panel {
